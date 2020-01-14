@@ -1,0 +1,39 @@
+plugins {
+    // Apply the scala plugin to add support for Scala
+    id 'scala'
+}
+
+dependencies {
+    // Use Scala 2.12 in our library project
+    implementation 'org.scala-lang:scala-library:2.12'
+
+    implementation 'com.typesafe.akka:akka-actor_2.12:2.5.23'
+
+    compile group: 'redis.clients', name: 'jedis', version: '3.1.0'
+
+    //Support to Vertx libraries.
+    implementation 'io.vertx:vertx-lang-scala_2.12:3.6.2'
+    implementation 'io.vertx:vertx-web-scala_2.12:3.6.2'
+    implementation 'io.vertx:vertx-web-client-scala_2.12:3.6.2'
+
+    // JSON4S Json Library
+    compile group: 'org.json4s', name: 'json4s-native_2.12', version: '3.6.0'
+    compile group: 'org.json4s', name: 'json4s-jackson_2.12', version: '3.6.0'
+
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.12.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.0'
+
+    // https://mvnrepository.com/artifact/org.redisson/redisson
+    compile group: 'org.redisson', name: 'redisson', version: '3.11.1'
+
+    //Joda - for manage date-time
+    implementation 'joda-time:joda-time:2.10.3'
+
+
+    // Use Scalatest for testing our library
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.scalatest:scalatest_2.12:3.0.5'
+
+    // Need scala-xml at test runtime
+    testRuntimeOnly 'org.scala-lang.modules:scala-xml_2.12:1.1.1'
+}

@@ -1,0 +1,8 @@
+include 'commons'
+include 'event-emitter'
+include 'device-simulator'
+include 'datawarehouse'
+
+
+rootProject.name = 'smart-city-project'
+
