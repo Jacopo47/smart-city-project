@@ -10,6 +10,10 @@ dependencies {
     implementation 'com.typesafe.akka:akka-actor_2.12:2.5.23'
 
     compile group: 'redis.clients', name: 'jedis', version: '3.1.0'
+    compile group: 'com.typesafe.slick', name: 'slick_2.13', version: '3.3.2'
+    compile group: 'org.postgresql', name: 'postgresql', version: '42.2.9'
+    compile group: 'com.typesafe.slick', name: 'slick-hikaricp_2.13', version: '3.3.2'
+
 
     //Support to Vertx libraries.
     implementation 'io.vertx:vertx-lang-scala_2.12:3.6.2'

@@ -1,18 +1,22 @@
 package controller
 
+import java.sql.Timestamp
+
 import model.dao.ClientRedis.readStreamAsGroup
-import model.dao.{ClientRedis, SENSOR_MAIN_STREAM_KEY, SensorRead}
+import model.dao.FactTableComponent.Fact
+import model.dao.{ClientRedis, FactTableComponent, SENSOR_MAIN_STREAM_KEY, SensorRead}
 import model.logger.Log
 import org.joda.time.DateTime
 
-import scala.collection.mutable
+import scala.collection.mutable.{Map => MMap}
+import scala.collection.mutable.{Buffer => MBuffer}
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 import scala.util.Success
 
 
 case class ETLManager(group: String, consumerId: String) {
-  var temperatureEntries: Map[DateTime, mutable.Map[String, Seq[Double]]] = Map[DateTime, mutable.Map[String, Seq[Double]]]()
+  var temperatureEntries: Map[DateTime, MMap[String, MBuffer[Double]]] = Map[DateTime, MMap[String, MBuffer[Double]]]()
 
   ClientRedis.initializeConsumerGroup(group)
 
@@ -42,11 +46,11 @@ case class ETLManager(group: String, consumerId: String) {
       temperatureEntries.get(entryHour) match {
         case Some(hourEntries) =>
           hourEntries.get(entry.name) match {
-            case Some(entries) => entries :+ entry.temperature
-            case None => hourEntries.put(entry.name, Seq(entry.temperature))
+            case Some(entries) => entries += entry.temperature
+            case None => hourEntries.put(entry.name, MBuffer(entry.temperature))
           }
         case None =>
-          temperatureEntries = temperatureEntries + (entryHour -> mutable.Map(entryHour -> Seq(entry.temperature)))
+          temperatureEntries = temperatureEntries + (entryHour -> MMap(entry.name -> MBuffer(entry.temperature)))
       }
 
       temperatureEntries
@@ -55,17 +59,17 @@ case class ETLManager(group: String, consumerId: String) {
     } andThen {
       case Success(values) =>
         val currentHour = new DateTime().hourOfDay().roundFloorCopy()
-        val oldEntries: Map[DateTime, mutable.Map[String, Seq[Double]]] = values.filter(e => e._1.isBefore(currentHour))
+        val oldEntries: Map[DateTime, MMap[String, MBuffer[Double]]] = values.filter(e => e._1.isBefore(currentHour))
 
         oldEntries foreach { case (k, v) =>
           v foreach { case (zone, temperatures) =>
-            val average = temperatures.sum(_) / temperatures.size
-            Log.debug(s"Hour $k. Zone $zone -> avg($average)")
+            val average = temperatures.toSeq.sum / temperatures.size
+            FactTableComponent.insert(Fact(zone, new Timestamp(k.getMillis), average))
           }
 
           temperatureEntries = temperatureEntries - (k)
         }
 
-  }
+    }
   }
 }

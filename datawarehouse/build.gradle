@@ -9,6 +9,7 @@ dependencies {
     compile project(':commons')
     compile 'joda-time:joda-time:2.10.5'
 
+
     // Use Scala 2.12 in our library project
     implementation 'org.scala-lang:scala-library:2.12.7'
 

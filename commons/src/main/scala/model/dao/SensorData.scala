@@ -6,7 +6,7 @@ import org.joda.time.DateTime
 import org.json4s.jackson.Serialization.{read, write}
 import redis.clients.jedis.{StreamEntry, StreamEntryID}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class SensorData(val name: String, val temperature: Double, val humidity: Double, val coordinate: Option[Coordinate]) {
 
