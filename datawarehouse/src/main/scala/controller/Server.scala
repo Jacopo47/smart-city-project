@@ -38,8 +38,6 @@ object Server {
     val zone = req.pathParams().getOrElse("zone", "Cesena")
 
 
-    val app = new Timestamp(new DateTime().hourOfDay().roundFloorCopy().getMillis)
-
     FactTableComponent.select(from, to, zone) onComplete {
       case Success(values) => res.sendResponse(Facts(values))
       case Failure(exception) => res.sendResponse(Error(Some(exception.getMessage)))
