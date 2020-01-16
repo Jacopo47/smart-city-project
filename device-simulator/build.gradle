@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 
-mainClassName = 'scala.Main'
+mainClassName = 'Main'
 
 dependencies {
     compile project(':commons')
@@ -25,4 +25,9 @@ dependencies {
 
     // Need scala-xml at test runtime
     testRuntimeOnly 'org.scala-lang.modules:scala-xml_2.12:1.1.1'
+}
+
+
+task stage {
+    dependsOn installDist
 }

@@ -24,7 +24,6 @@ case class DeviceSimulator() {
             case Failure(exception) =>
               Log error exception
           }
-
       }
     }
   }
