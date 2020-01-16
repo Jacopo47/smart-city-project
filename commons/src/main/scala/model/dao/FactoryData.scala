@@ -7,7 +7,7 @@ import model.utilities.{NULL_DATA, UNAVAILABLE}
 import org.joda.time.DateTime
 import redis.clients.jedis.StreamEntry
 
-import scala.jdk.CollectionConverters._
+import collection.JavaConverters._
 
 class FactoryData(val datetimeSource: DateTime, val partCount: Long, controllerMode: ControllerMode, toolNumber: Double, val machineName: String, block: String, val rotaryVelocity: Double, val rotaryTemperature: Double, val execution: ExecutionState, val program: String, val emergencyStop: EmergencyStopState) {
 

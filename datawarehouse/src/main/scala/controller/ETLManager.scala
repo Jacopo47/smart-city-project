@@ -63,7 +63,7 @@ case class ETLManager(group: String, consumerId: String) {
 
         oldEntries foreach { case (k, v) =>
           v foreach { case (zone, temperatures) =>
-            val average = temperatures.toSeq.sum / temperatures.size
+            val average = temperatures.sum / temperatures.size
             FactTableComponent.insert(Fact(zone, new Timestamp(k.getMillis), average))
           }
 

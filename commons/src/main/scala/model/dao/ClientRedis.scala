@@ -4,8 +4,7 @@ import java.util.AbstractMap.SimpleImmutableEntry
 
 import model.logger.Log
 import redis.clients.jedis.{Jedis, StreamEntry, StreamEntryID}
-
-import scala.jdk.CollectionConverters._
+import collection.JavaConverters._
 
 /**
  * Create a space for executing Redis commands.
@@ -58,7 +57,7 @@ object ClientRedis {
 
       result.asScala
         .find(e => e.getKey.equals(stream))
-        .map(e => (e.getKey, e.getValue.asScala.toSeq)) match {
+        .map(e => (e.getKey, e.getValue.asScala)) match {
         case Some(value) => if (value._2.isEmpty) return None else return Some(value)
         case None => return None
       }

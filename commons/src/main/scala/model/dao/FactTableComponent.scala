@@ -43,17 +43,20 @@ object FactTableComponent {
   def select(from: Timestamp, to: Timestamp, zone: String): Future[Seq[Fact]] = {
     val facts = TableQuery[FactTable]
 
-    val action = facts
+    val query = facts
       .filter(_.dateTime >= from)
       .filter(_.dateTime <= to)
       .filter(_.zone === zone)
-      .result
+
+
+
+    val action = query.result
 
     val db = getDbConnection
     db.run(action)
   }
 
-  private def executeSimpleCommand[U](cmd: DBIOAction[Unit, NoStream, U]): Unit = {
+  private def executeSimpleCommand[U <: Effect](cmd: DBIOAction[Unit, NoStream, U]): Unit = {
     val db = getDbConnection
     db.run(cmd) andThen {
       case Success(value) => Log.info(value.toString)
