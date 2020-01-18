@@ -2,9 +2,11 @@ package model.dao
 
 import java.util.AbstractMap.SimpleImmutableEntry
 
+import io.lettuce.core.api.sync.RedisCommands
 import model.logger.Log
 import redis.clients.jedis.{Jedis, StreamEntry, StreamEntryID}
-import collection.JavaConverters._
+
+import scala.collection.JavaConverters._
 
 /**
  * Create a space for executing Redis commands.
@@ -43,7 +45,7 @@ object ClientRedis {
   def addError(error: LogError): Unit = {
     ClientRedis {
       client =>
-        client.xadd(SENSOR_MAIN_STREAM_KEY, StreamEntryID.NEW_ENTRY, error.toMap.asJava, STREAM_MAX_LENGTH, true)
+        client.xadd(ERROR_STREAM_KEY, StreamEntryID.NEW_ENTRY, error.toMap.asJava, STREAM_MAX_LENGTH, true)
     }
   }
 
@@ -70,14 +72,44 @@ object ClientRedis {
     }
   }
 
-  def initializeConsumerGroup(consumerGroup: String): Unit = {
+  def initializeConsumerGroup(consumerGroup: String, streamKey: String = SENSOR_MAIN_STREAM_KEY): Unit = {
     ClientRedis {
       client =>
         try {
-          client.xgroupCreate(SENSOR_MAIN_STREAM_KEY, consumerGroup, StreamEntryID.LAST_ENTRY, true)
+          client.xgroupCreate(streamKey, consumerGroup, StreamEntryID.LAST_ENTRY, true)
         } catch {
           case _: Throwable => Log.info(s"$consumerGroup group already in stream")
         }
     }
   }
+
+  def getConsumerId(groupIdKey: String) = ClientRedis { _.incr(groupIdKey) }.toString
+}
+
+
+/**
+ * Create a space for executing Redis commands.
+ * Give to the body a connection to the db and after all operations close the connection.
+ *
+ * @param body
+ * Function
+ */
+class LettuceRedis[T](body: RedisCommands[String, String]=> T) {
+
+  def createSpace(): T = {
+    val client = RedisConnection.getLettuceConnection
+    val connection = client.connect()
+
+    try {
+      body(connection.sync())
+    } finally {
+      connection.async()
+      client.shutdownAsync()
+    }
+
+  }
+}
+
+object LettuceRedis {
+  def apply[T](body: RedisCommands[String, String] => T): T = new LettuceRedis(body).createSpace()
 }

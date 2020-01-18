@@ -17,8 +17,9 @@ import scala.util.Success
 
 case class ETLManager(group: String, consumerId: String) {
   var temperatureEntries: Map[DateTime, MMap[String, MBuffer[Double]]] = Map[DateTime, MMap[String, MBuffer[Double]]]()
-
   ClientRedis.initializeConsumerGroup(group)
+
+  FactTableComponent.defineSchema()
 
   def start(): Future[Unit] = {
 
@@ -58,7 +59,7 @@ case class ETLManager(group: String, consumerId: String) {
       case _ => ClientRedis.sendAck(group, entry.id)
     } andThen {
       case Success(values) =>
-        val currentHour = new DateTime().hourOfDay().roundFloorCopy()
+        val currentHour = new DateTime().hourOfDay().roundFloorCopy().plusHours(1)
         val oldEntries: Map[DateTime, MMap[String, MBuffer[Double]]] = values.filter(e => e._1.isBefore(currentHour))
 
         oldEntries foreach { case (k, v) =>

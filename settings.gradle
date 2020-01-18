@@ -2,6 +2,8 @@ include 'commons'
 include 'event-emitter'
 include 'device-simulator'
 include 'datawarehouse'
+include 'monitor'
+include 'updater'
 
 
 rootProject.name = 'smart-city-project'

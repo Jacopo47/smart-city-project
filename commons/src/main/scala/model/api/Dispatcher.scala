@@ -37,7 +37,7 @@ object Dispatcher {
 }
 
 
-case class Dispatcher(routesHandler: Map[(String, HttpMethod), (RoutingContext, RouterResponse) => Unit] = Map()) extends ScalaVerticle {
+case class Dispatcher(routesHandler: Map[(String, HttpMethod), (RoutingContext, RouterResponse) => Unit] = Map(), var port: Int = PORT) extends ScalaVerticle {
 
 
   override def start(): Unit = {
@@ -49,9 +49,6 @@ case class Dispatcher(routesHandler: Map[(String, HttpMethod), (RoutingContext, 
     val options = HttpServerOptions()
     options.setCompressionSupported(true)
       .setIdleTimeout(TIMEOUT)
-
-
-    var port = PORT
 
     if (System.getenv("PORT") != null) port = System.getenv("PORT").toInt
 

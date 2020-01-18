@@ -1,5 +1,6 @@
 package model.dao
 
+import io.lettuce.core.{RedisClient, RedisURI}
 import redis.clients.jedis.{Jedis, JedisPool, JedisPoolConfig}
 
 object RedisConnection {
@@ -29,6 +30,17 @@ object RedisConnection {
   }
 
   def getConnection: Jedis = connection.getResource
+
+
+  def getLettuceConnection: RedisClient = {
+    val redisURI = REDIS_PW match {
+      case Some(pw) => RedisURI.Builder.redis(redisHost, redisPort).withPassword(pw).build()
+
+      case None => RedisURI.Builder.redis(redisHost, redisPort).build()
+    }
+
+    RedisClient.create(redisURI)
+  }
 
   def close: Unit = connection.close()
 }

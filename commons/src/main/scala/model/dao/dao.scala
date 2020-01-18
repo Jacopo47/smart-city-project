@@ -1,10 +1,14 @@
 package model
 
+import java.text.SimpleDateFormat
+
 import org.json4s.DefaultFormats
 import redis.clients.jedis.Jedis
 
 package object dao {
-  implicit val formats: DefaultFormats.type = DefaultFormats
+  implicit val formats: DefaultFormats = new DefaultFormats {
+    override def dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+  }
 
   def STREAM_MAX_LENGTH = 500
 

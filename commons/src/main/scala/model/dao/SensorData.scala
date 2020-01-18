@@ -59,9 +59,9 @@ object SensorData {
   def apply(dataAsJson: String): SensorData = {
     val data: SensorDataRead = read[SensorDataRead](dataAsJson)
 
-    def fahrenheitToCelsius(temp: Double): Double = (temp - 32) / (1.8)
+    def kelvinToCelsius(temp: Double): Double = (temp - 273.15).round
 
-    SensorData(data.name, fahrenheitToCelsius(data.main.temp), data.main.humidity, Some(Coordinate(data.coord.lat, data.coord.lon)))
+    SensorData(data.name, kelvinToCelsius(data.main.temp), data.main.humidity, Some(Coordinate(data.coord.lat, data.coord.lon)))
   }
 
   def apply(name: String, temperature: Double, humidity: Double, coordinate: Option[Coordinate] = None): SensorData = new SensorData(name, temperature, humidity, coordinate)
