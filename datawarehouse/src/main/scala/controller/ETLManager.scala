@@ -59,13 +59,13 @@ case class ETLManager(group: String, consumerId: String) {
       case _ => ClientRedis.sendAck(group, entry.id)
     } andThen {
       case Success(values) =>
-        val currentHour = new DateTime().hourOfDay().roundFloorCopy().plusHours(1)
+        val currentHour = new DateTime().hourOfDay().roundFloorCopy()
         val oldEntries: Map[DateTime, MMap[String, MBuffer[Double]]] = values.filter(e => e._1.isBefore(currentHour))
 
         oldEntries foreach { case (k, v) =>
           v foreach { case (zone, temperatures) =>
             val average = temperatures.sum / temperatures.size
-            FactTableComponent.insert(Fact(zone, new Timestamp(k.getMillis), average))
+            FactTableComponent.insert(Fact(None, zone, new Timestamp(k.getMillis), average))
           }
 
           temperatureEntries = temperatureEntries - (k)

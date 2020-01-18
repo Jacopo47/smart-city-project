@@ -1,17 +1,18 @@
 package controller
 
 import java.sql.Timestamp
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
+
 import io.vertx.core.http.HttpMethod
 import io.vertx.scala.ext.web.RoutingContext
 import model.api.{Dispatcher, Error, Errors, Facts, Ok, RouterResponse}
-import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, StreamGroupsInfo}
+import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo}
 import model.logger.Log
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 
 
 class Server(routes: Map[(String, HttpMethod), (RoutingContext, RouterResponse) => Unit]) extends Dispatcher(routes) {
@@ -27,7 +28,8 @@ object Server {
       ("/datawarehouse/:from/:to/:zone", HttpMethod.GET) -> getTemperatures,
       ("/api/errors", HttpMethod.GET) -> latestErrors,
       ("/api/consumerGroupInfo", HttpMethod.GET) -> consumerGroupInfo,
-      ("/api/consumersInfo/:group", HttpMethod.GET) -> allConsumerInfo
+      ("/api/consumersInfo/:group", HttpMethod.GET) -> allConsumerInfo,
+      ("/api/data/:limit", HttpMethod.GET) -> getData
     )
 
     new Server(handlers)
@@ -56,7 +58,9 @@ object Server {
   def allConsumerInfo: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     req.pathParams().get("group") match {
       case Some(group) =>
-        val result = LettuceRedis { _.xinfoConsumers(SENSOR_MAIN_STREAM_KEY, group) }
+        val result = LettuceRedis {
+          _.xinfoConsumers(SENSOR_MAIN_STREAM_KEY, group)
+        }
         res.sendResponse(Ok(result
           .asScala
           .map(e => ConsumerInfo(e))))
@@ -64,6 +68,18 @@ object Server {
       case None => res.sendResponse(Error(Some("Please specify a group")))
     }
   }
+
+  private def getData: (RoutingContext, RouterResponse) => Unit = (req, res) => {
+    val limit: Int = req.pathParam("limit").getOrElse("10").toInt
+
+    res
+      .sendResponse(
+        Ok(ClientRedis {
+          _.xrevrange(SENSOR_MAIN_STREAM_KEY, null, null, limit)
+        }
+          .asScala.map(SensorRead(_))))
+  }
+
 
   private def getTemperatures: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     val formatter = DateTimeFormat.forPattern("dd-MM-yyyy")

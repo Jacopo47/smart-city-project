@@ -1,11 +1,12 @@
 package model.dao
 
-import java.sql.Timestamp
+import java.sql.{SQLType, Timestamp}
 
 import model.logger.Log
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
+import slick.sql.SqlProfile.ColumnOption.SqlType
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -58,12 +59,12 @@ object FactTableComponent {
     db.run(action)
   }
 
-  case class Fact(zone: String, dateTime: Timestamp, temperature: Double, id: Long = 0L)
+  case class Fact(id: Option[Int], zone: String, dateTime: Timestamp, temperature: Double)
 
   class FactTable(tag: Tag) extends Table[Fact](tag, "FactTable") {
-    override def * = (zone, dateTime, temperature, id) <> (Fact.tupled, Fact.unapply)
+    override def * = (id.?, zone, dateTime, temperature) <> (Fact.tupled, Fact.unapply)
 
-    def id = column[Long]("ID", O.PrimaryKey, O.AutoInc)
+    def id = column[Int]("ID", SqlType("Serial"),O.PrimaryKey, O.AutoInc)
 
     def zone = column[String]("ZONE")
 
