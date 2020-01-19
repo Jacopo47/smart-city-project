@@ -6,6 +6,7 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.scala.ext.web.RoutingContext
 import model.api.{Dispatcher, Error, Errors, Facts, Ok, RouterResponse}
 import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo}
+import model.dao.ToTimestamp
 import model.logger.Log
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
@@ -29,7 +30,7 @@ object Server {
       ("/api/errors", HttpMethod.GET) -> latestErrors,
       ("/api/consumerGroupInfo", HttpMethod.GET) -> consumerGroupInfo,
       ("/api/consumersInfo/:group", HttpMethod.GET) -> allConsumerInfo,
-      ("/api/data/:limit", HttpMethod.GET) -> getData
+      ("/api/data/:zone/:limit", HttpMethod.GET) -> getData
     )
 
     new Server(handlers)
@@ -70,21 +71,27 @@ object Server {
   }
 
   private def getData: (RoutingContext, RouterResponse) => Unit = (req, res) => {
-    val limit: Int = req.pathParam("limit").getOrElse("10").toInt
+    req.pathParam("zone") match {
+      case Some(zone) =>
+        val limit: Int = req.pathParam("limit").getOrElse("10").toInt
 
-    res
-      .sendResponse(
-        Ok(ClientRedis {
-          _.xrevrange(SENSOR_MAIN_STREAM_KEY, null, null, limit)
-        }
-          .asScala.map(SensorRead(_))))
+        res
+          .sendResponse(
+            Ok(ClientRedis {
+              _.xrevrange(SENSOR_MAIN_STREAM_KEY, null, null, limit)
+            }
+              .asScala
+              .map(SensorRead(_))
+              .filter(e => e.name.equalsIgnoreCase(zone))))
+      case None => res.sendResponse(Error(Some("Please specify a zone")))
+    }
   }
 
 
   private def getTemperatures: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     val formatter = DateTimeFormat.forPattern("dd-MM-yyyy")
-    val from = new Timestamp(formatter.parseDateTime(req.pathParams().getOrElse("from", "01/01/2000")).getMillis)
-    val to = new Timestamp(formatter.parseDateTime(req.pathParams().getOrElse("to", DateTime.now().toString("dd/mm/yyyy"))).getMillis)
+    val from: Timestamp = formatter.parseDateTime(req.pathParams().getOrElse("from", "01/01/2000"))
+    val to: Timestamp = formatter.parseDateTime(req.pathParams().getOrElse("to", DateTime.now().toString("dd/mm/yyyy")))
     val zone = req.pathParams().getOrElse("zone", "Cesena")
 
 
