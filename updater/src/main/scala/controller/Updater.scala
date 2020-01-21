@@ -24,12 +24,11 @@ class Updater(server: SocketIOServer, group: String, consumerId: String) {
 
 
   private def onStreamEntry(entry: SensorRead): Unit = {
-    val message: SensorReadMessageUpdate = SensorReadMessageUpdate(entry.name, entry.temperature, entry.humidity, entry.dateTime)
-    server.getBroadcastOperations.sendEvent("sensor-read-update", write(message))
+    server.getBroadcastOperations.sendEvent("sensor-read-update", write(entry))
   }
 
   private def onErrorStreamEntry(entry: ErrorStreamEntry): Unit = {
-    server.getBroadcastOperations.sendEvent("sensor-error-update", write(Errors(Seq(entry))))
+    server.getBroadcastOperations.sendEvent("sensor-error-update", write(entry))
   }
 
 
@@ -69,7 +68,7 @@ class Updater(server: SocketIOServer, group: String, consumerId: String) {
 
 }
 
-case class SensorReadMessageUpdate(zone: String, temperature: Double, humidity: Double, dateTime: Timestamp)
+case class SensorReadMessageUpdate(zone: String, temperature: Double, humidity: Double, dateTime: Timestamp, coordinate: Option[Coordinate])
 
 object Updater {
   def apply(server: SocketIOServer, group: String, consumerId: String): Updater = new Updater(server, group, consumerId)

@@ -32,7 +32,9 @@ object Server {
       ("/api/errors", HttpMethod.GET) -> latestErrors,
       ("/api/consumerGroupInfo", HttpMethod.GET) -> consumerGroupInfo,
       ("/api/consumersInfo/:group", HttpMethod.GET) -> allConsumerInfo,
-      ("/api/data/:zone/:limit", HttpMethod.GET) -> getData
+      ("/api/data/:zone/:limit", HttpMethod.GET) -> getData,
+      ("/api/zone/", HttpMethod.GET) -> getZones,
+      ("/api/zone/last", HttpMethod.GET) -> getLatestZoneRead
     )
 
     new Server(handlers)
@@ -89,6 +91,30 @@ object Server {
     }
   }
 
+  private def getZones: (RoutingContext, RouterResponse) => Unit = (_, res) => {
+
+    res
+      .sendResponse(
+        Ok(ClientRedis {
+          _.xrevrange(SENSOR_MAIN_STREAM_KEY, null, null, Int.MaxValue)
+        }
+          .asScala
+          .map(SensorRead(_))
+          .map(_.zone).toSet))
+
+  }
+
+  private def getLatestZoneRead: (RoutingContext, RouterResponse) => Unit = (_, res) => {
+    res
+      .sendResponse(
+        Ok(ClientRedis {
+          _.xrevrange(SENSOR_MAIN_STREAM_KEY, null, null, Int.MaxValue)
+        }
+          .asScala
+          .map(SensorRead(_))
+            .groupBy(_.zone).map(_._2.head)))
+
+  }
 
   private def getTemperatures: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     val formatter = DateTimeFormat.forPattern("dd-MM-yyyy")

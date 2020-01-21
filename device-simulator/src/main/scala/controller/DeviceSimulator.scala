@@ -1,5 +1,6 @@
 package controller
 
+import controller.DeviceSimulator.DEVICE_NAME
 import model.api.RestClient
 import model.dao.{ClientRedis, SensorData}
 import model.logger.Log
@@ -20,7 +21,7 @@ case class DeviceSimulator() {
             requestParams = Some(Map("q" -> DeviceSimulator.DEVICE_LOCATION, "appid" -> DeviceSimulator.API_KEY)))
           .onComplete {
             case Success(data) =>
-              onDataEntry(SensorData(data.getOrElse("No data found")))
+              onDataEntry(SensorData(data.getOrElse("No data found"), DEVICE_NAME))
             case Failure(exception) =>
               Log error exception
           }
@@ -44,6 +45,8 @@ object DeviceSimulator {
   def API_VERSION = "2.5"
 
   def DEVICE_LOCATION: String = System.getenv("deviceLocation")
+
+  def DEVICE_NAME: String = System.getenv("deviceName")
 
   def API_KEY: String = System.getenv("weatherApiKey")
 }
