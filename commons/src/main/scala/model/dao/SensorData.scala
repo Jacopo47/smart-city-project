@@ -1,12 +1,15 @@
 package model.dao
 
+import java.sql.Timestamp
+
 import model.dao.SensorData._
 import model.utilities.UNKNOWN
 import org.joda.time.DateTime
 import org.json4s.jackson.Serialization.{read, write}
-import redis.clients.jedis.{StreamEntry, StreamEntryID}
+import redis.clients.jedis.StreamEntry
 
-import collection.JavaConverters._
+
+import scala.collection.JavaConverters._
 
 class SensorData(val name: String, val temperature: Double, val humidity: Double, val coordinate: Option[Coordinate]) {
 
@@ -20,8 +23,8 @@ class SensorData(val name: String, val temperature: Double, val humidity: Double
   }
 }
 
-class SensorRead(val id: StreamEntryID,
-                 val dateTime: DateTime,
+class SensorRead(val id: String,
+                 val dateTime: Timestamp,
                  override val name: String,
                  override val temperature: Double,
                  override val humidity: Double,
@@ -40,7 +43,7 @@ object SensorRead {
     val latitude: Double = fields.getOrElse(LATITUDE, "0").toDouble
     val longitude: Double = fields.getOrElse(LONGITUDE, "0").toDouble
 
-    new SensorRead(entry.getID, datetime, name, temperature, humidity, Some(Coordinate(latitude, longitude)))
+    new SensorRead(entry.getID.toString, datetime, name, temperature, humidity, Some(Coordinate(latitude, longitude)))
   }
 }
 

@@ -1,5 +1,6 @@
 package model.api
 
+import io.vertx.core.Handler
 import io.vertx.core.http.{HttpHeaders, HttpMethod}
 import io.vertx.lang.scala.ScalaVerticle
 import io.vertx.scala.core.Vertx
@@ -37,7 +38,9 @@ object Dispatcher {
 }
 
 
-case class Dispatcher(routesHandler: Map[(String, HttpMethod), (RoutingContext, RouterResponse) => Unit] = Map(), var port: Int = PORT) extends ScalaVerticle {
+case class Dispatcher(routesHandler: Map[(String, HttpMethod), (RoutingContext, RouterResponse) => Unit] = Map()
+                      , var port: Int = PORT
+                      , handler: Handler[RoutingContext] = StaticHandler.create()) extends ScalaVerticle {
 
 
   override def start(): Unit = {
@@ -52,7 +55,7 @@ case class Dispatcher(routesHandler: Map[(String, HttpMethod), (RoutingContext, 
 
     if (System.getenv("PORT") != null) port = System.getenv("PORT").toInt
 
-    router.route().handler(StaticHandler.create())
+    router.route().handler(handler)
 
 
     GET(router, "/", hello)

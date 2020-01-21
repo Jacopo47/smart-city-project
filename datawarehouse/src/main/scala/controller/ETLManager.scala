@@ -1,7 +1,5 @@
 package controller
 
-import java.sql.Timestamp
-
 import model.dao.ClientRedis.readStreamAsGroup
 import model.dao.FactTableComponent.Fact
 import model.dao.{ClientRedis, FactTableComponent, SENSOR_MAIN_STREAM_KEY, SensorRead}
@@ -13,6 +11,8 @@ import scala.collection.mutable.{Buffer => MBuffer}
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.Future
 import scala.util.Success
+import model.dao.ToTimestamp
+import redis.clients.jedis.StreamEntryID
 
 
 case class ETLManager(group: String, consumerId: String) {
@@ -42,7 +42,7 @@ case class ETLManager(group: String, consumerId: String) {
 
   private def onStreamEntry(entry: SensorRead): Unit = {
     Future {
-      val entryHour: DateTime = entry.dateTime.hourOfDay().roundFloorCopy()
+      val entryHour: DateTime = new DateTime(entry.dateTime).hourOfDay().roundFloorCopy()
 
       temperatureEntries.get(entryHour) match {
         case Some(hourEntries) =>
@@ -56,7 +56,7 @@ case class ETLManager(group: String, consumerId: String) {
 
       temperatureEntries
     } andThen {
-      case _ => ClientRedis.sendAck(group, entry.id)
+      case _ => ClientRedis.sendAck(group, new StreamEntryID(entry.id))
     } andThen {
       case Success(values) =>
         val currentHour = new DateTime().hourOfDay().roundFloorCopy()
@@ -65,7 +65,7 @@ case class ETLManager(group: String, consumerId: String) {
         oldEntries foreach { case (k, v) =>
           v foreach { case (zone, temperatures) =>
             val average = temperatures.sum / temperatures.size
-            FactTableComponent.insert(Fact(None, zone, new Timestamp(k.getMillis), average))
+            FactTableComponent.insert(Fact(None, zone, k, average))
           }
 
           temperatureEntries = temperatureEntries - (k)

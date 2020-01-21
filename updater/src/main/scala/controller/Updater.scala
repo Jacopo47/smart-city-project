@@ -24,7 +24,7 @@ class Updater(server: SocketIOServer, group: String, consumerId: String) {
 
 
   private def onStreamEntry(entry: SensorRead): Unit = {
-    val message: SensorReadMessageUpdate = SensorReadMessageUpdate(entry.name, entry.temperature, entry.humidity, new Timestamp(entry.dateTime.getMillis))
+    val message: SensorReadMessageUpdate = SensorReadMessageUpdate(entry.name, entry.temperature, entry.humidity, entry.dateTime)
     server.getBroadcastOperations.sendEvent("sensor-read-update", write(message))
   }
 

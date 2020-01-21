@@ -4,9 +4,9 @@ import java.sql.Timestamp
 
 import io.vertx.core.http.HttpMethod
 import io.vertx.scala.ext.web.RoutingContext
+import io.vertx.scala.ext.web.handler.CorsHandler
 import model.api.{Dispatcher, Error, Errors, Facts, Ok, RouterResponse}
-import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo}
-import model.dao.ToTimestamp
+import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo, ToTimestamp}
 import model.logger.Log
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
@@ -16,7 +16,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 
-class Server(routes: Map[(String, HttpMethod), (RoutingContext, RouterResponse) => Unit]) extends Dispatcher(routes) {
+class Server(routes: Map[(String, HttpMethod), (RoutingContext, RouterResponse) => Unit])
+  extends Dispatcher(routes, handler = CorsHandler.create("*").allowedMethod(HttpMethod.GET).allowedMethod(HttpMethod.POST)) {
+
   override def start(): Unit = {
     super.start()
     Log.info("Server is running...")

@@ -13,7 +13,7 @@ import model.dao.LogError
 sealed trait JsonResponse
 
 case class Message(message: String) extends JsonResponse
-case class Error(cause: Option[String] = None) extends JsonResponse
+case class Error(message: Option[String] = None) extends JsonResponse
 case class ResponseArray(list: Seq[Any]) extends JsonResponse
 case class Facts(facts: Seq[Fact]) extends JsonResponse
 case class ErrorStreamEntry(dateTime: Timestamp, error: LogError) extends JsonResponse

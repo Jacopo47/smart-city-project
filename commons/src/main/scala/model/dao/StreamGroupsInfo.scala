@@ -6,13 +6,13 @@ import scala.collection.JavaConverters._
 
 case class StreamGroupsInfo(name: String, consumers: Long, pendingMessages: Long, lastDeliveredIdTime: Timestamp)
 object StreamGroupsInfo {
-  def apply(name: String, consumers: Long, pendingMessages: Long, lastDeliveredIdTime: DateTime): StreamGroupsInfo = new StreamGroupsInfo(name, consumers, pendingMessages, new Timestamp(lastDeliveredIdTime.getMillis))
+  def apply(name: String, consumers: Long, pendingMessages: Long, lastDeliveredIdTime: DateTime): StreamGroupsInfo = new StreamGroupsInfo(name, consumers, pendingMessages, lastDeliveredIdTime)
 
   def apply(generic: AnyRef): StreamGroupsInfo = {
     val values = generic.asInstanceOf[java.util.ArrayList[AnyRef]].asScala
     val timestamp = new DateTime(values(7).asInstanceOf[String].split("-")(0).toLong)
 
-    new StreamGroupsInfo(values(1).toString, values(3).asInstanceOf[Long], values(5).asInstanceOf[Long], new Timestamp(timestamp.getMillis))
+    new StreamGroupsInfo(values(1).toString, values(3).asInstanceOf[Long], values(5).asInstanceOf[Long], timestamp)
   }
 }
 

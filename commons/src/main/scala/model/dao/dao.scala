@@ -1,7 +1,9 @@
 package model
 
+import java.sql.Timestamp
 import java.text.SimpleDateFormat
 
+import org.joda.time.DateTime
 import org.json4s.DefaultFormats
 import redis.clients.jedis.Jedis
 
@@ -28,5 +30,9 @@ package object dao {
   def ERROR_STREAM_KEY = "sensor:errors:stream"
 
   def closeConnection(client: Jedis): Unit = client.quit()
+
+  implicit def ToTimestamp(dateTime: DateTime): Timestamp = {
+      new Timestamp(dateTime.getMillis)
+  }
 }
 

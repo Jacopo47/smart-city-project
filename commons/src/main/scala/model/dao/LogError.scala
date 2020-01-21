@@ -4,12 +4,11 @@ import java.sql.Timestamp
 
 import model.api.ErrorStreamEntry
 import model.utilities.UNKNOWN
-import org.joda.time.DateTime
 import redis.clients.jedis.StreamEntry
 
 import scala.collection.JavaConverters._
 
-case class LogError( errorMsg: String, deviceId: String = model.utilities.UNKNOWN, zone: String = model.utilities.UNKNOWN) {
+case class LogError(errorMsg: String, deviceId: String = model.utilities.UNKNOWN, zone: String = model.utilities.UNKNOWN) {
 
   def toMap: Map[String, String] = Map("error" -> errorMsg, "device" -> deviceId, "zone" -> zone)
 }

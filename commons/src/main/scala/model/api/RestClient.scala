@@ -53,7 +53,7 @@ object RestClient {
     } else {
       try {
         val errorMsg = read[Error](result.bodyAsString().get)
-        throw new Throwable(errorMsg.cause.getOrElse("No error description"))
+        throw new Throwable(errorMsg.message.getOrElse("No error description"))
       } catch {
         case _: Exception => throw new Throwable(result.bodyAsString().getOrElse(""))
       }
