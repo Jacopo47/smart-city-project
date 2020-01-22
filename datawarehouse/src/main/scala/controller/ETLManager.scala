@@ -42,16 +42,16 @@ case class ETLManager(group: String, consumerId: String) {
 
   private def onStreamEntry(entry: SensorRead): Unit = {
     Future {
-      val entryHour: DateTime = new DateTime(entry.dateTime).hourOfDay().roundFloorCopy()
+      val entryHour: DateTime = new DateTime(entry.dateTime).minuteOfDay().roundFloorCopy()
 
       temperatureEntries.get(entryHour) match {
         case Some(hourEntries) =>
-          hourEntries.get(entry.name) match {
+          hourEntries.get(entry.zone) match {
             case Some(entries) => entries += entry.temperature
-            case None => hourEntries.put(entry.name, MBuffer(entry.temperature))
+            case None => hourEntries.put(entry.zone, MBuffer(entry.temperature))
           }
         case None =>
-          temperatureEntries = temperatureEntries + (entryHour -> MMap(entry.name -> MBuffer(entry.temperature)))
+          temperatureEntries = temperatureEntries + (entryHour -> MMap(entry.zone -> MBuffer(entry.temperature)))
       }
 
       temperatureEntries
@@ -59,7 +59,7 @@ case class ETLManager(group: String, consumerId: String) {
       case _ => ClientRedis.sendAck(group, new StreamEntryID(entry.id))
     } andThen {
       case Success(values) =>
-        val currentHour = new DateTime().hourOfDay().roundFloorCopy()
+        val currentHour = new DateTime().minuteOfDay().roundFloorCopy().plusMinutes(2)
         val oldEntries: Map[DateTime, MMap[String, MBuffer[Double]]] = values.filter(e => e._1.isBefore(currentHour))
 
         oldEntries foreach { case (k, v) =>
