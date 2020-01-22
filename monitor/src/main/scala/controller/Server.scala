@@ -126,7 +126,7 @@ object Server {
 
 
     FactTableComponent.select(from, to, zone, granularity) onComplete {
-      case Success(values) => res.sendResponse(Ok(values.map(e => SimpleFact(e._1, e._2))))
+      case Success(values) => res.sendResponse(Ok(values.map(e => SimpleFact(zone, e._1, e._2))))
       case Failure(exception) => res.sendResponse(Error(Some(exception.getMessage)))
     }
   }
