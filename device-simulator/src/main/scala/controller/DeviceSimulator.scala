@@ -36,7 +36,7 @@ case class DeviceSimulator() {
 }
 
 object DeviceSimulator {
-  def DEVICE_TIME_SLEEP = 10000
+  def DEVICE_TIME_SLEEP = 60000
 
   def API_ENDPOINT = "api.openweathermap.org"
 
