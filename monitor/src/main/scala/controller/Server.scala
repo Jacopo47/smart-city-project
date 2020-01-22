@@ -5,8 +5,9 @@ import java.sql.Timestamp
 import io.vertx.core.http.HttpMethod
 import io.vertx.scala.ext.web.RoutingContext
 import io.vertx.scala.ext.web.handler.CorsHandler
-import model.api.{Dispatcher, Error, Errors, Facts, Ok, RouterResponse}
-import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo, ToTimestamp}
+import model.api.{Dispatcher, Error, Errors, Facts, Ok, RouterResponse, SimpleFact}
+import model.dao.Granularity.GranularityState
+import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, Granularity, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo, ToTimestamp}
 import model.logger.Log
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
@@ -28,7 +29,7 @@ class Server(routes: Map[(String, HttpMethod), (RoutingContext, RouterResponse) 
 object Server {
   def apply(): Server = {
     val handlers = Map(
-      ("/datawarehouse/:from/:to/:zone", HttpMethod.GET) -> getTemperatures,
+      ("/datawarehouse/:from/:to/:zone/:granularity", HttpMethod.GET) -> getTemperatures,
       ("/api/errors", HttpMethod.GET) -> latestErrors,
       ("/api/consumerGroupInfo", HttpMethod.GET) -> consumerGroupInfo,
       ("/api/consumersInfo/:group", HttpMethod.GET) -> allConsumerInfo,
@@ -121,10 +122,11 @@ object Server {
     val from: Timestamp = formatter.parseDateTime(req.pathParams().getOrElse("from", "01/01/2000"))
     val to: Timestamp = formatter.parseDateTime(req.pathParams().getOrElse("to", DateTime.now().toString("dd/mm/yyyy")))
     val zone = req.pathParams().getOrElse("zone", "Cesena")
+    val granularity: GranularityState = Granularity.valueOf(req.pathParams().getOrElse("granularity","day"))
 
 
-    FactTableComponent.select(from, to, zone) onComplete {
-      case Success(values) => res.sendResponse(Facts(values))
+    FactTableComponent.select(from, to, zone, granularity) onComplete {
+      case Success(values) => res.sendResponse(Ok(values.map(e => SimpleFact(e._1, e._2))))
       case Failure(exception) => res.sendResponse(Error(Some(exception.getMessage)))
     }
   }

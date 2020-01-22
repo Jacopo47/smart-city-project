@@ -16,6 +16,7 @@ case class Message(message: String) extends JsonResponse
 case class Error(message: Option[String] = None) extends JsonResponse
 case class ResponseArray(list: Seq[Any]) extends JsonResponse
 case class Facts(facts: Seq[Fact]) extends JsonResponse
+case class SimpleFact(period: String, value: Option[Double])
 case class ErrorStreamEntry(dateTime: Timestamp, error: LogError) extends JsonResponse
 case class Errors(errors: Seq[ErrorStreamEntry]) extends JsonResponse
 case class Ok[T](data: T) extends JsonResponse
