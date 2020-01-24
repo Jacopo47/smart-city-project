@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import io.vertx.core.http.HttpMethod
 import io.vertx.scala.ext.web.RoutingContext
 import io.vertx.scala.ext.web.handler.CorsHandler
-import model.api.{Dispatcher, Error, Errors, Facts, Ok, RouterResponse, SimpleFact}
+import model.api.{Dispatcher, Error, Errors, Ok, RouterResponse, SimpleFact}
 import model.dao.Granularity.GranularityState
 import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, Granularity, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo, ToTimestamp}
 import model.logger.Log
@@ -51,14 +51,20 @@ object Server {
   }
 
   def consumerGroupInfo: (RoutingContext, RouterResponse) => Unit = (_, res) => {
-    val result = LettuceRedis {
+    val groups = LettuceRedis {
 
       _.xinfoGroups(SENSOR_MAIN_STREAM_KEY)
+    }.asScala
+      .map(e => StreamGroupsInfo(e))
+
+    groups foreach {
+      g =>
+        g.consumersList = Some(LettuceRedis {
+          _.xinfoConsumers(SENSOR_MAIN_STREAM_KEY, g.name)
+        }.asScala.map(e => ConsumerInfo(e)))
     }
 
-    res.sendResponse(Ok(result
-      .asScala
-      .map(e => StreamGroupsInfo(e))))
+    res.sendResponse(Ok(groups))
   }
 
   def allConsumerInfo: (RoutingContext, RouterResponse) => Unit = (req, res) => {
@@ -113,7 +119,7 @@ object Server {
         }
           .asScala
           .map(SensorRead(_))
-            .groupBy(_.zone).map(_._2.head)))
+          .groupBy(_.zone).map(_._2.head)))
 
   }
 
@@ -122,7 +128,7 @@ object Server {
     val from: Timestamp = formatter.parseDateTime(req.pathParams().getOrElse("from", "01/01/2000"))
     val to: Timestamp = formatter.parseDateTime(req.pathParams().getOrElse("to", DateTime.now().toString("dd/mm/yyyy")))
     val zone = req.pathParams().getOrElse("zone", "Cesena")
-    val granularity: GranularityState = Granularity.valueOf(req.pathParams().getOrElse("granularity","day"))
+    val granularity: GranularityState = Granularity.valueOf(req.pathParams().getOrElse("granularity", "day"))
 
 
     FactTableComponent.select(from, to, zone, granularity) onComplete {
