@@ -1,11 +1,14 @@
 package controller
 
+import java.lang
 import java.sql.Timestamp
 
+import io.lettuce.core.Consumer
+import io.lettuce.core.XReadArgs.StreamOffset
 import io.vertx.core.http.HttpMethod
 import io.vertx.scala.ext.web.RoutingContext
 import io.vertx.scala.ext.web.handler.CorsHandler
-import model.api.{Dispatcher, Error, Errors, Ok, RouterResponse, SimpleFact}
+import model.api.{Dispatcher, Error, Errors, Message, Ok, RouterResponse, SimpleFact}
 import model.dao.Granularity.GranularityState
 import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, Granularity, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo, ToTimestamp}
 import model.logger.Log
@@ -31,11 +34,14 @@ object Server {
     val handlers = Map(
       ("/datawarehouse/:from/:to/:zone/:granularity", HttpMethod.GET) -> getTemperatures,
       ("/api/errors", HttpMethod.GET) -> latestErrors,
-      ("/api/consumerGroupInfo", HttpMethod.GET) -> consumerGroupInfo,
       ("/api/consumersInfo/:group", HttpMethod.GET) -> allConsumerInfo,
       ("/api/data/:zone/:limit", HttpMethod.GET) -> getData,
       ("/api/zone/", HttpMethod.GET) -> getZones,
-      ("/api/zone/last", HttpMethod.GET) -> getLatestZoneRead
+      ("/api/zone/last", HttpMethod.GET) -> getLatestZoneRead,
+      ("/api/consumerGroup/info", HttpMethod.GET) -> consumerGroupInfo,
+      ("/api/consumerGroup/destroy/:group", HttpMethod.POST) -> destroyGroup,
+      ("/api/consumerGroup/remove/:group/:consumer", HttpMethod.POST) -> deleteConsumer,
+      ("/api/consumerGroup/set-id/:group/:id", HttpMethod.POST) -> setConsumerGroupId
     )
 
     new Server(handlers)
@@ -134,6 +140,73 @@ object Server {
     FactTableComponent.select(from, to, zone, granularity) onComplete {
       case Success(values) => res.sendResponse(Ok(values.map(e => SimpleFact(zone, e._1, e._2))))
       case Failure(exception) => res.sendResponse(Error(Some(exception.getMessage)))
+    }
+  }
+
+  private def destroyGroup: (RoutingContext, RouterResponse) => Unit = (req, res) => {
+    req.pathParam("group") match {
+      case Some(group) =>
+        try {
+          if (LettuceRedis {
+            _.xgroupDestroy(SENSOR_MAIN_STREAM_KEY, group)
+          }) {
+            res.sendResponse(Message("Group correctly deleted!"))
+          } else {
+            res.sendResponse(Error(Some("Error! Impossible delete the group..")))
+          }
+        } catch {
+          case ex: Throwable => res.sendResponse(Error(Some("Error! Impossible delete the group. Details: " + ex.getMessage)))
+        }
+      case None => res.sendResponse(Error(Some("Please specify the group to delete")))
+    }
+  }
+
+  private def deleteConsumer: (RoutingContext, RouterResponse) => Unit = (req, res) => {
+    req.pathParam("group") match {
+      case Some(group) =>
+        req.pathParam("consumer") match {
+          case Some(consumer) =>
+            try {
+              if (LettuceRedis {
+                _.xgroupDelconsumer(SENSOR_MAIN_STREAM_KEY, Consumer.from(group, consumer))
+              }) {
+                res.sendResponse(Message("Consumer correctly deleted!"))
+              } else {
+                res.sendResponse(Error(Some("Error! Impossible delete the consumer..")))
+              }
+            } catch {
+              case ex: Throwable => res.sendResponse(Error(Some("Error! Impossible delete the consumer. Details: " + ex.getMessage)))
+            }
+          case None =>
+            res.sendResponse(Error(Some("Please specify the consumer name")))
+        }
+
+      case None => res.sendResponse(Error(Some("Please specify the group of the consumer")))
+    }
+  }
+
+  private def setConsumerGroupId: (RoutingContext, RouterResponse) => Unit = (req, res) => {
+    req.pathParam("group") match {
+      case Some(group) =>
+        req.pathParam("id") match {
+          case Some(id) =>
+            try {
+              val result: String =LettuceRedis {
+                _.xgroupSetid(StreamOffset.from(SENSOR_MAIN_STREAM_KEY, id), group)
+              }
+              if(result.equalsIgnoreCase("OK")) {
+                res.sendResponse(Message("Consumer correctly deleted!"))
+              } else {
+                res.sendResponse(Error(Some("Error! Impossible set the ID -> " + id + ". Details: " + result)))
+              }
+            } catch {
+              case ex: Throwable => res.sendResponse(Error(Some("Error! Impossible set the ID -> " + id + ". Details: " + ex.getMessage)))
+            }
+          case None =>
+            res.sendResponse(Error(Some("Please specify the ID to set")))
+        }
+
+      case None => res.sendResponse(Error(Some("Please specify the group")))
     }
   }
 }
