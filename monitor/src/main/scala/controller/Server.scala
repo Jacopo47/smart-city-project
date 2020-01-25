@@ -1,6 +1,5 @@
 package controller
 
-import java.lang
 import java.sql.Timestamp
 
 import io.lettuce.core.Consumer
@@ -167,13 +166,10 @@ object Server {
         req.pathParam("consumer") match {
           case Some(consumer) =>
             try {
-              if (LettuceRedis {
+              LettuceRedis {
                 _.xgroupDelconsumer(SENSOR_MAIN_STREAM_KEY, Consumer.from(group, consumer))
-              }) {
-                res.sendResponse(Message("Consumer correctly deleted!"))
-              } else {
-                res.sendResponse(Error(Some("Error! Impossible delete the consumer..")))
               }
+              res.sendResponse(Message("Consumer correctly deleted!"))
             } catch {
               case ex: Throwable => res.sendResponse(Error(Some("Error! Impossible delete the consumer. Details: " + ex.getMessage)))
             }
@@ -191,10 +187,10 @@ object Server {
         req.pathParam("id") match {
           case Some(id) =>
             try {
-              val result: String =LettuceRedis {
+              val result: String = LettuceRedis {
                 _.xgroupSetid(StreamOffset.from(SENSOR_MAIN_STREAM_KEY, id), group)
               }
-              if(result.equalsIgnoreCase("OK")) {
+              if (result.equalsIgnoreCase("OK")) {
                 res.sendResponse(Message("Consumer correctly deleted!"))
               } else {
                 res.sendResponse(Error(Some("Error! Impossible set the ID -> " + id + ". Details: " + result)))

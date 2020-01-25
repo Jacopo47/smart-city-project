@@ -60,6 +60,15 @@ case class RouterResponse(routingContext: RoutingContext,
   def setOnClose(operation: Option[() => Unit]) = onClose = operation
 
 
+  def sendResponse(error: Error): Unit = {
+    routingContext.response()
+      .setStatusCode(EXCEPTION_CODE)
+      .setChunked(true)
+      .putHeader("Content-Type", "application/json")
+      .write(write(error))
+      .end()
+  }
+
   /**
    * Send the response to the client.
    *
@@ -76,12 +85,7 @@ case class RouterResponse(routingContext: RoutingContext,
           .write(write(data))
           .end()
       case ResponseException =>
-        routingContext.response()
-          .setStatusCode(EXCEPTION_CODE)
-          .setChunked(true)
-          .putHeader("Content-Type", "application/json")
-          .write(write(Error(message)))
-          .end()
+        sendResponse(Error(message))
     }
 
     onClose match {
