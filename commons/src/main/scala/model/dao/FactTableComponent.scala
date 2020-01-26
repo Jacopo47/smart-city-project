@@ -1,22 +1,27 @@
 package model.dao
 
-import java.sql.{SQLType, Timestamp}
-import java.time.Instant
 
-import model.dao.Granularity.{DAY, GranularityState, MONTH, YEAR}
+import java.sql.{Date, Timestamp}
+import java.time.LocalDate
+
+import model.dao.Granularity.GranularityState
 import model.logger.Log
 import org.joda.time.DateTime
-import redis.clients.jedis.Tuple
 import slick.dbio.Effect
 import slick.jdbc.PostgresProfile.api._
 import slick.lifted.TableQuery
 import slick.sql.SqlProfile.ColumnOption.SqlType
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 object FactTableComponent {
+  implicit def jodaTimeMapping: BaseColumnType[DateTime] = MappedColumnType.base[DateTime, Timestamp](
+    dateTime => new Timestamp(dateTime.getMillis),
+    timeStamp => new DateTime(timeStamp.getTime)
+  )
+
   def defineSchema(): Unit = {
     val facts = TableQuery[FactTable]
 
@@ -46,16 +51,14 @@ object FactTableComponent {
     } onComplete (_ => db.close())
   }
 
-  private def getDbConnection = Database.forConfig("mydb")
-
   def select(from: Timestamp, to: Timestamp, zone: String, granularity: GranularityState = Granularity.DAY): Future[Seq[(String, Option[Double])]] = {
     val facts = TableQuery[FactTable]
 
     val timestampToChar = SimpleFunction.binary[Timestamp, String, String]("to_char")
-    val getHours = (input: FactTable) => (timestampToChar(input.dateTime, "DD/MM/YYYY HH24"), input.temperature)
-    val getDay = (input: FactTable) => (timestampToChar(input.dateTime, "DD/MM/YYYY"), input.temperature)
-    val getMonthYear = (input: FactTable) => (timestampToChar(input.dateTime, "MM/YYYY"), input.temperature)
-    val getYear = (input: FactTable) => (timestampToChar(input.dateTime, "YYYY"), input.temperature)
+    val getHours = (input: FactTable) => (timestampToChar(input.dateTime, "DD/MM/YYYY HH24"), input.temperature, input.dateTime)
+    val getDay = (input: FactTable) => (timestampToChar(input.dateTime, "DD/MM/YYYY"), input.temperature, input.dateTime)
+    val getMonthYear = (input: FactTable) => (timestampToChar(input.dateTime, "MM/YYYY"), input.temperature, input.dateTime)
+    val getYear = (input: FactTable) => (timestampToChar(input.dateTime, "YYYY"), input.temperature, input.dateTime)
 
     val mapping = granularity match {
       case Granularity.DAY => getDay
@@ -68,12 +71,11 @@ object FactTableComponent {
       .filter(_.dateTime >= from)
       .filter(_.dateTime <= to)
       .filter(_.zone === zone)
-      .map(mapping).groupBy(_._1).map { case (date, e) => date -> e.map(_._2).avg }
+      .map(mapping).groupBy(_._1).map { case (date, e) => (date, e.map(_._2).avg)}
 
     val action = query.result
 
     val db = getDbConnection
-
 
 
     val f = db.run(action)
@@ -82,6 +84,8 @@ object FactTableComponent {
     f
   }
 
+  private def getDbConnection = Database.forConfig("mydb")
+
   case class Fact(id: Option[Int], zone: String, dateTime: Timestamp, temperature: Double)
 
   class FactTable(tag: Tag) extends Table[Fact](tag, "FactTable") {
@@ -89,13 +93,13 @@ object FactTableComponent {
 
     def id = column[Int]("ID", SqlType("Serial"), O.PrimaryKey, O.AutoInc)
 
-    def zone = column[String]("ZONE")
-
-    def dateTime = column[Timestamp]("DATETIME")
-
     def temperature = column[Double]("TEMPERATURE")
 
     def idx = index("idx_1", (zone, dateTime), unique = true)
+
+    def zone = column[String]("ZONE")
+
+    def dateTime = column[Timestamp]("DATETIME")
   }
 
 }
@@ -103,11 +107,21 @@ object FactTableComponent {
 
 object Granularity {
 
+  def apply(input: String): GranularityState = valueOf(input)
+
+  def valueOf(str: String): GranularityState = str.toLowerCase match {
+    case HOUR.asString => HOUR
+    case DAY.asString => DAY
+    case MONTH.asString => MONTH
+    case YEAR.asString => YEAR
+    case _ => throw new Throwable("Granularity " + str + " not found")
+  }
+
+  def values: Iterable[GranularityState] = Iterable(HOUR, DAY, MONTH, YEAR)
+
   sealed trait GranularityState {
     def asString: String
   }
-
-  def apply(input: String): GranularityState = valueOf(input)
 
   case object DAY extends GranularityState {
     override val asString: String = "day"
@@ -123,15 +137,5 @@ object Granularity {
 
   case object HOUR extends GranularityState {
     override val asString: String = "hour"
-  }
-
-  def values: Iterable[GranularityState] = Iterable(HOUR, DAY, MONTH, YEAR)
-
-  def valueOf(str: String): GranularityState = str.toLowerCase match {
-    case HOUR.asString => HOUR
-    case DAY.asString => DAY
-    case MONTH.asString => MONTH
-    case YEAR.asString => YEAR
-    case _ => throw new Throwable("Granularity " + str + " not found")
   }
 }

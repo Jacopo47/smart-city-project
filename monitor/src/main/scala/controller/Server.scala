@@ -1,6 +1,5 @@
 package controller
 
-import java.lang
 import java.sql.Timestamp
 
 import io.lettuce.core.Consumer
@@ -9,7 +8,7 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.scala.ext.web.RoutingContext
 import io.vertx.scala.ext.web.handler.CorsHandler
 import model.api.{Dispatcher, Error, Errors, Message, Ok, RouterResponse, SimpleFact}
-import model.dao.Granularity.GranularityState
+import model.dao.Granularity._
 import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, Granularity, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo, ToTimestamp}
 import model.logger.Log
 import org.joda.time.DateTime
@@ -136,9 +135,15 @@ object Server {
     val zone = req.pathParams().getOrElse("zone", "Cesena")
     val granularity: GranularityState = Granularity.valueOf(req.pathParams().getOrElse("granularity", "day"))
 
+    val periodFormatter = DateTimeFormat.forPattern(granularity match {
+      case HOUR => "dd/MM/yyyy HH"
+      case DAY => "dd/MM/yyyy"
+      case MONTH => "MM/yyyy"
+      case YEAR => "yyyy"
+    })
 
     FactTableComponent.select(from, to, zone, granularity) onComplete {
-      case Success(values) => res.sendResponse(Ok(values.map(e => SimpleFact(zone, e._1, e._2))))
+      case Success(values) => res.sendResponse(Ok(values.map(e => SimpleFact(zone, e._1, e._2)).sortBy(e => periodFormatter.parseDateTime(e.period).getMillis)))
       case Failure(exception) => res.sendResponse(Error(Some(exception.getMessage)))
     }
   }
@@ -167,13 +172,10 @@ object Server {
         req.pathParam("consumer") match {
           case Some(consumer) =>
             try {
-              if (LettuceRedis {
+              LettuceRedis {
                 _.xgroupDelconsumer(SENSOR_MAIN_STREAM_KEY, Consumer.from(group, consumer))
-              }) {
-                res.sendResponse(Message("Consumer correctly deleted!"))
-              } else {
-                res.sendResponse(Error(Some("Error! Impossible delete the consumer..")))
               }
+              res.sendResponse(Message("Consumer correctly deleted!"))
             } catch {
               case ex: Throwable => res.sendResponse(Error(Some("Error! Impossible delete the consumer. Details: " + ex.getMessage)))
             }
@@ -191,10 +193,10 @@ object Server {
         req.pathParam("id") match {
           case Some(id) =>
             try {
-              val result: String =LettuceRedis {
+              val result: String = LettuceRedis {
                 _.xgroupSetid(StreamOffset.from(SENSOR_MAIN_STREAM_KEY, id), group)
               }
-              if(result.equalsIgnoreCase("OK")) {
+              if (result.equalsIgnoreCase("OK")) {
                 res.sendResponse(Message("Consumer correctly deleted!"))
               } else {
                 res.sendResponse(Error(Some("Error! Impossible set the ID -> " + id + ". Details: " + result)))
