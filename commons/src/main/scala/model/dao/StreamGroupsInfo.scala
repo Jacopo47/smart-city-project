@@ -4,9 +4,10 @@ import java.sql.Timestamp
 import org.joda.time.DateTime
 import scala.collection.JavaConverters._
 
-case class StreamGroupsInfo(name: String, consumers: Long, pendingMessages: Long, lastDeliveredIdTime: Timestamp)
+case class StreamGroupsInfo(name: String, consumers: Long, pendingMessages: Long, lastDeliveredIdTime: Timestamp, var consumersList: Option[Seq[ConsumerInfo]] = None)
+
 object StreamGroupsInfo {
-  def apply(name: String, consumers: Long, pendingMessages: Long, lastDeliveredIdTime: DateTime): StreamGroupsInfo = new StreamGroupsInfo(name, consumers, pendingMessages, lastDeliveredIdTime)
+  def apply(name: String, consumers: Long, pendingMessages: Long, lastDeliveredIdTime: Timestamp, consumersList: Option[Seq[ConsumerInfo]]): StreamGroupsInfo = new StreamGroupsInfo(name, consumers, pendingMessages, lastDeliveredIdTime, consumersList)
 
   def apply(generic: AnyRef): StreamGroupsInfo = {
     val values = generic.asInstanceOf[java.util.ArrayList[AnyRef]].asScala
