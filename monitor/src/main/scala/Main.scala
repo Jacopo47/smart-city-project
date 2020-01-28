@@ -3,6 +3,7 @@ import io.vertx.scala.core.Vertx
 
 object Main {
   def main(args: Array[String]): Unit = {
-    Vertx.vertx().deployVerticle(Server())
+    val port: Int = Option[String](System.getenv("PORT")).getOrElse("4700").toInt
+    Vertx.vertx().deployVerticle(Server(port = port))
   }
 }

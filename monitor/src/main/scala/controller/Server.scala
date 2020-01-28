@@ -19,8 +19,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 
-class Server(routes: Map[(String, HttpMethod), (RoutingContext, RouterResponse) => Unit])
-  extends Dispatcher(routes, handler = CorsHandler.create("*").allowedMethod(HttpMethod.GET).allowedMethod(HttpMethod.POST)) {
+class Server(routes: Map[(String, HttpMethod), (RoutingContext, RouterResponse) => Unit], port: Int = 4700)
+  extends Dispatcher(routes, handler = CorsHandler.create("*").allowedMethod(HttpMethod.GET).allowedMethod(HttpMethod.POST), port = port) {
 
   override def start(): Unit = {
     super.start()
@@ -29,7 +29,7 @@ class Server(routes: Map[(String, HttpMethod), (RoutingContext, RouterResponse) 
 }
 
 object Server {
-  def apply(): Server = {
+  def apply(port: Int): Server = {
     val handlers = Map(
       ("/datawarehouse/:from/:to/:zone/:granularity", HttpMethod.GET) -> getTemperatures,
       ("/api/errors", HttpMethod.GET) -> latestErrors,
@@ -43,7 +43,7 @@ object Server {
       ("/api/consumerGroup/set-id/:group/:id", HttpMethod.POST) -> setConsumerGroupId
     )
 
-    new Server(handlers)
+    new Server(handlers, port = port)
   }
 
 
