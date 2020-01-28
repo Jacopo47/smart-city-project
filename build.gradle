@@ -1,6 +1,7 @@
 plugins {
     id 'scala'
     id 'java'
+    id 'application'
 }
 
 version '1.0-SNAPSHOT'
@@ -34,4 +35,8 @@ dependencies {
 
     // Need scala-xml at test runtime
     testRuntimeOnly 'org.scala-lang.modules:scala-xml_2.12:1.1.1'
+}
+
+task stage {
+    subprojects.each { if (it.name != "commons") dependsOn("${it.name}:stage") }
 }
