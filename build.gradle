@@ -12,6 +12,8 @@ subprojects {
 }
 
 
+mainClassName = 'Main'
+
 allprojects {
     repositories {
         mavenCentral()
