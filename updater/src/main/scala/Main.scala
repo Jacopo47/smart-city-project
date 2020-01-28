@@ -12,7 +12,7 @@ object Main extends App {
 
   val host: String = Option(System.getenv("WS_HOST")).getOrElse("localhost")
   val port: Int = Option(System.getenv("PORT")).getOrElse("9092").toInt
-  Log.debug("Port -> " + port)
+
   config.setHostname(host)
   config.setPort(port)
 
