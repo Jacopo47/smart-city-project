@@ -8,7 +8,7 @@ import io.vertx.core.http.HttpMethod
 import io.vertx.scala.ext.web.RoutingContext
 import io.vertx.scala.ext.web.handler.CorsHandler
 import model.api.{Dispatcher, Error, Errors, Message, Ok, RouterResponse, SimpleFact}
-import model.dao.Granularity.GranularityState
+import model.dao.Granularity._
 import model.dao.{ClientRedis, ConsumerInfo, ERROR_STREAM_KEY, FactTableComponent, Granularity, LettuceRedis, LogError, SENSOR_MAIN_STREAM_KEY, SensorRead, StreamGroupsInfo, ToTimestamp}
 import model.logger.Log
 import org.joda.time.DateTime
@@ -135,9 +135,15 @@ object Server {
     val zone = req.pathParams().getOrElse("zone", "Cesena")
     val granularity: GranularityState = Granularity.valueOf(req.pathParams().getOrElse("granularity", "day"))
 
+    val periodFormatter = DateTimeFormat.forPattern(granularity match {
+      case HOUR => "dd/MM/yyyy HH"
+      case DAY => "dd/MM/yyyy"
+      case MONTH => "MM/yyyy"
+      case YEAR => "yyyy"
+    })
 
     FactTableComponent.select(from, to, zone, granularity) onComplete {
-      case Success(values) => res.sendResponse(Ok(values.map(e => SimpleFact(zone, e._1, e._2))))
+      case Success(values) => res.sendResponse(Ok(values.map(e => SimpleFact(zone, e._1, e._2)).sortBy(e => periodFormatter.parseDateTime(e.period).getMillis)))
       case Failure(exception) => res.sendResponse(Error(Some(exception.getMessage)))
     }
   }

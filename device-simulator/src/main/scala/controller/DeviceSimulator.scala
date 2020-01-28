@@ -15,16 +15,20 @@ case class DeviceSimulator() {
       while (true) {
         Thread.sleep(DeviceSimulator.DEVICE_TIME_SLEEP)
 
-        RestClient
-          .get(DeviceSimulator.API_ENDPOINT,
-            DeviceSimulator.API_PATH,
-            requestParams = Some(Map("q" -> DeviceSimulator.DEVICE_LOCATION, "appid" -> DeviceSimulator.API_KEY)))
-          .onComplete {
-            case Success(data) =>
-              onDataEntry(SensorData(data.getOrElse("No data found"), DEVICE_NAME))
-            case Failure(exception) =>
-              Log error exception
-          }
+        try {
+          RestClient
+            .get(DeviceSimulator.API_ENDPOINT,
+              DeviceSimulator.API_PATH,
+              requestParams = Some(Map("q" -> DeviceSimulator.DEVICE_LOCATION, "appid" -> DeviceSimulator.API_KEY)))
+            .onComplete {
+              case Success(data) =>
+                onDataEntry(SensorData(data.getOrElse("No data found"), DEVICE_NAME))
+              case Failure(exception) =>
+                Log error exception
+            }
+        } catch {
+          case ex: Throwable => Log error ex
+        }
       }
     }
   }
