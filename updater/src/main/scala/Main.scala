@@ -8,8 +8,11 @@ import scala.concurrent.duration.Duration
 object Main extends App {
 
   val config = new Configuration()
-  config.setHostname("localhost")
-  config.setPort(9092)
+
+  val host: String = Option(System.getenv("WS_HOST")).getOrElse("localhost")
+  val port: Int = Option(System.getenv("PORT")).getOrElse("9092").toInt
+  config.setHostname(host)
+  config.setPort(port)
 
   val server = new SocketIOServer(config)
 

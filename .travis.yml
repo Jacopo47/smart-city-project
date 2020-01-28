@@ -1,6 +1,15 @@
 language: java
-deploy:
-  provider: heroku
-  api_key:
-    secure: PQ++4TRH/KqUSVPAEnTjvud/YED+6PqlUr52vhSrEWn87+hbXwBF6gtLXz3iewObxIzlIUsoNs/1okOH+bXc3fE3dATMDomeY/nI6sTpS8qQ0HtckX1s+Ri+GnHaprm5r20ZBAyWHSS84VXf8bTwnPVzyzGI0XrfmW5/5hvnQ559WlkoY59s5VhbwavsH2FugDk6FfAqEkMjGg2RYsJgrIdzdgQDcGPRkLzQSe10u2qjfUP6p4nUkFyVqtmcSDd35NtuolrfMjNNE0GnIfInpn7v2vhq+bMh1oIwZ98vU74lkm+7YTHeeD7IpRGx9GYTgQ7m2v7++7+zc5YByuOdc2V7mtoPv+0ZIP2x7s2oX1FsUxUdi7EsHofOmYK6cW9l8zXGB1pXzBCns5Pf9J9nKMQZTvP/BIE6riv4lrvdA6Pmtht2yYTV0lTJlJqsdtGJSWFhr2Z3G5PdqMNDFHWHLV3kMjhpZgSkrPeONGnSkctpaEfktRxEJOzNny5yI5E/MI8DB0Pp26MXR6Hkx9YpaoSKdY6rRbccL5uQr/iHDsuwBzqZQ+C4a9ZeACSZi8tGn8vYA5cDr3fbEHnMnd3SuYeLdCe7tmKeBRms+dlVqHgI6mXPKFvxbx3ZLW20MW/D3P2LNTSYBeFvca9qIc/kzvZM0/JXlnM4iQk7hP3cjAg=
-  app: smart-city-server
+jobs:
+  include:
+    - stage: deploy monitor and datawarehouse
+      script: skip
+      deploy: &heroku
+        provider: heroku
+        api_key:
+          secure: $HEROKU_AUTH_TOKEN
+        app: smart-city-server
+    - stage: deploy update and event-emitter
+      script: skip
+      deploy:
+        <<: *heroku
+        app: smart-city-updater

@@ -1,0 +1,2 @@
+web: updater/build/install/updater/bin/updater
+worker: event-emitter/build/install/event-emitter/bin/event-emitter
