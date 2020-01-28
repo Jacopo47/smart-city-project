@@ -4,27 +4,15 @@ import io.lettuce.core.{RedisClient, RedisURI}
 import redis.clients.jedis.{Jedis, JedisPool, JedisPoolConfig}
 
 object RedisConnection {
-  private var redisHost: String = "127.0.0.1"
-  private var redisPort: Int = 6379
-  private var redisPw: Option[String] = None
+  private val redisHost: String = Option(System.getenv("REDIS_HOST")).getOrElse("127.0.0.1")
+  private val redisPort: Int = Option(System.getenv("REDIS_PORT")).getOrElse("6379").toInt
+  private val redisPw: Option[String] = Option(System.getenv("REDIS_PW"))
 
   private val DEFAULT_TIMEOUT: Int = 15000
 
-  def setRedisHost(value: String): Unit = redisHost = value
-
-  def REDIS_HOST: String = redisHost
-
-  def setRedisPort(value: Int): Unit = redisPort = value
-
-  def REDIS_PORT: Int = redisPort
-
-  def setRedisPw(value: String): Unit = redisPw = Some(value)
-
-  def REDIS_PW: Option[String] = redisPw
-
   val config = new JedisPoolConfig()
 
-  private val connection: JedisPool = REDIS_PW match {
+  private val connection: JedisPool = redisPw match {
     case Some(pw) => new JedisPool(config,redisHost, redisPort, DEFAULT_TIMEOUT, pw)
     case None => new JedisPool(config,redisHost, redisPort, DEFAULT_TIMEOUT)
   }
@@ -33,7 +21,7 @@ object RedisConnection {
 
 
   def getLettuceConnection: RedisClient = {
-    val redisURI = REDIS_PW match {
+    val redisURI = redisPw match {
       case Some(pw) => RedisURI.Builder.redis(redisHost, redisPort).withPassword(pw).build()
 
       case None => RedisURI.Builder.redis(redisHost, redisPort).build()
