@@ -31,6 +31,10 @@ case class EventEmitter(group: String, consumerId: String) {
     }
   }
 
+  /**
+   * Check if read is ok and send ACK
+   *
+   */
   private def onStreamEntry(entry: SensorRead): Unit = {
     def sendError(msg: String): Unit = {
       Log.warn(msg)
