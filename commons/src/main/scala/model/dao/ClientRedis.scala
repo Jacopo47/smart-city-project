@@ -66,9 +66,9 @@ object ClientRedis {
     })
   }
 
-  def sendAck(group: String, streamEntryID: StreamEntryID): Unit = {
+  def sendAck(group: String, streamEntryID: StreamEntryID, stream: String = SENSOR_MAIN_STREAM_KEY): Unit = {
     ClientRedis {
-      _.xack(SENSOR_MAIN_STREAM_KEY, group, streamEntryID)
+      _.xack(stream, group, streamEntryID)
     }
   }
 

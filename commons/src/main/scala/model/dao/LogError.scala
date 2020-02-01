@@ -4,7 +4,7 @@ import java.sql.Timestamp
 
 import model.api.ErrorStreamEntry
 import model.utilities.UNKNOWN
-import redis.clients.jedis.StreamEntry
+import redis.clients.jedis.{StreamEntry, StreamEntryID}
 
 import scala.collection.JavaConverters._
 
@@ -24,4 +24,5 @@ object LogError {
 
     ErrorStreamEntry(datetime, LogError(error, device, zone))
   }
-}
+
+  def getEntryWithID(entry: StreamEntry): (StreamEntryID, ErrorStreamEntry) = (entry.getID, getEntry(entry))
