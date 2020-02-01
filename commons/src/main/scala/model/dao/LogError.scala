@@ -26,3 +26,5 @@ object LogError {
   }
 
   def getEntryWithID(entry: StreamEntry): (StreamEntryID, ErrorStreamEntry) = (entry.getID, getEntry(entry))
+
+}
