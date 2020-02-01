@@ -29,6 +29,14 @@ class Server(routes: Map[(String, HttpMethod), (RoutingContext, RouterResponse) 
 }
 
 object Server {
+  /**
+   * Define API path and handlers
+   *
+   * @param port
+   * Listen on this port
+   * @return
+   * Server instance
+   */
   def apply(port: Int): Server = {
     val handlers = Map(
       ("/datawarehouse/:from/:to/:zone/:granularity", HttpMethod.GET) -> getTemperatures,
@@ -47,6 +55,9 @@ object Server {
   }
 
 
+  /**
+   * Return the latest 10 errors
+   */
   def latestErrors: (RoutingContext, RouterResponse) => Unit = (_, res) => {
     val result = ClientRedis {
       _.xrevrange(ERROR_STREAM_KEY, null, null, 10)
@@ -55,6 +66,9 @@ object Server {
     res.sendResponse(Errors(result))
   }
 
+  /**
+   * Retrieve consumer group info on a specified stream
+   */
   def consumerGroupInfo: (RoutingContext, RouterResponse) => Unit = (_, res) => {
     val groups = LettuceRedis {
 
@@ -72,6 +86,9 @@ object Server {
     res.sendResponse(Ok(groups))
   }
 
+  /**
+   * Retrieve consumer in group info
+   */
   def allConsumerInfo: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     req.pathParams().get("group") match {
       case Some(group) =>
@@ -86,6 +103,9 @@ object Server {
     }
   }
 
+  /**
+   * Retrieve last data of a specified zone
+   */
   private def getData: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     req.pathParam("zone") match {
       case Some(zone) =>
@@ -103,6 +123,10 @@ object Server {
     }
   }
 
+  /**
+   * Retrieve all the zones in the main stream
+   *
+   */
   private def getZones: (RoutingContext, RouterResponse) => Unit = (_, res) => {
 
     res
@@ -116,6 +140,10 @@ object Server {
 
   }
 
+  /**
+   * Return latest read in all the zone in the main stream
+   *
+   */
   private def getLatestZoneRead: (RoutingContext, RouterResponse) => Unit = (_, res) => {
     res
       .sendResponse(
@@ -128,6 +156,10 @@ object Server {
 
   }
 
+  /**
+   * Query the DW and retrieve data to client
+   *
+   */
   private def getTemperatures: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     val formatter = DateTimeFormat.forPattern("dd-MM-yyyy")
     val from: Timestamp = formatter.parseDateTime(req.pathParams().getOrElse("from", "01/01/2000"))
@@ -148,6 +180,10 @@ object Server {
     }
   }
 
+  /**
+   * Destroy a group
+   *
+   */
   private def destroyGroup: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     req.pathParam("group") match {
       case Some(group) =>
@@ -166,6 +202,10 @@ object Server {
     }
   }
 
+  /**
+   * Delete a consumer in a specified group
+   *
+   */
   private def deleteConsumer: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     req.pathParam("group") match {
       case Some(group) =>
@@ -187,6 +227,11 @@ object Server {
     }
   }
 
+
+  /**
+   * Set the last sent ID in a group
+   *
+   */
   private def setConsumerGroupId: (RoutingContext, RouterResponse) => Unit = (req, res) => {
     req.pathParam("group") match {
       case Some(group) =>
