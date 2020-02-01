@@ -40,6 +40,11 @@ case class ETLManager(group: String, consumerId: String) {
     }
   }
 
+  /**
+   * Save entry by zone - hour.
+   * At a new hour calculate AVG on all entries in a specific zone and insert the result in the DW
+   *
+   */
   private def onStreamEntry(entry: SensorRead): Unit = {
     Future {
       val entryHour: DateTime = new DateTime(entry.dateTime).hourOfDay().roundFloorCopy()
